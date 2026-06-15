@@ -17,7 +17,7 @@ class Table:
     def insert_record(self, record: dict[str, Any]) -> None:
         
         missing_columns = [column for column in self.columns if column not in record]
-        if missing_columns:
+        if missing_columns: 
             raise MissingColumnError(
                 f"Отсутствует поле '{missing_columns[0]}' в записи."
             )
@@ -77,7 +77,7 @@ class Table:
                 
                 
                 missing_columns = [col for col in self.columns if col not in updated_record]
-                if missing_columns:
+                if missing_columns: 
                     raise MissingColumnError(
                         f"После обновления отсутствует поле '{missing_columns[0]}'"
                     )

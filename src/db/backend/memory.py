@@ -1,5 +1,5 @@
 
-
+from .errors import InvalidAgeError, DuplicateIDError
 
 type StudentRecord = tuple[int, str, str, int, str]
 
@@ -14,10 +14,10 @@ def create_record(
 ) -> StudentRecord:
     
     if age < 0:
-        raise ValueError("Поле age не может быть отрицательным")
+        raise InvalidAgeError("Поле age не может быть отрицательным")
     
     if any(record[0] == student_id for record in Student):
-        raise ValueError(f"Запись с id={student_id} уже существует.")
+        raise DuplicateIDError(f"Запись с id={student_id} уже существует.")
     
     new_record: StudentRecord = (
         student_id,
