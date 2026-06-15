@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from .database import Database
-from .errors import InvalidStorageDataError, TableNotFoundError
+from .errors import InvalidStorageDataError, TableNotFoundError, StorageIOError
 from .table import Table
 
 
@@ -11,7 +11,15 @@ class FileDatabase(Database):
 
     def __init__(self, directory: str = "data") -> None:
         self.directory = Path(directory)
-        self.directory.mkdir(parents=True, exist_ok=True)
+        try:
+            self.directory.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise StorageIOError(
+                f"Не удалось создать директорию для БД '{directory}': {error}"
+            ) from error
+
+    def _get_table_path(self, table_name: str) -> Path:
+        return self.directory / f"{table_name}.json"
 
     def _table_exists(self, table_name: str) -> bool:
         return self._get_table_path(table_name).exists()
@@ -22,7 +30,6 @@ class FileDatabase(Database):
             raise TableNotFoundError(
                 f"Таблица '{table_name}' не существует."
             )
-
         try:
             with table_path.open("r", encoding="utf-8") as file:
                 data = json.load(file)
@@ -30,27 +37,27 @@ class FileDatabase(Database):
             raise InvalidStorageDataError(
                 "Файл таблицы содержит некорректный JSON."
             ) from error
-
+        except OSError as error:
+            raise StorageIOError(
+                f"Ошибка доступа к файлу таблицы '{table_name}': {error}"
+            ) from error
         return self._deserialize_table(data)
 
     def _save_table(self, table_name: str, table: Table) -> None:
         table_path = self._get_table_path(table_name)
-
-        with table_path.open("w", encoding="utf-8") as file:
-            json.dump(
-                self._serialize_table(table),
-                file,
-                ensure_ascii=False,
-                indent=2,
-            )
-
-    def _get_table_path(self, table_name: str) -> Path:
-        return self.directory / f"{table_name}.json"
+        data = self._serialize_table(table)
+        try:
+            with table_path.open("w", encoding="utf-8") as file:
+                json.dump(data, file, indent=2, ensure_ascii=False)
+        except OSError as error:
+            raise StorageIOError(
+                f"Ошибка сохранения таблицы '{table_name}': {error}"
+            ) from error
 
     def _serialize_table(self, table: Table) -> dict:
         return {
             "columns": list(table.columns),
-            "records": [record.copy() for record in table.records],
+            "records": table.records,
         }
 
     def _deserialize_table(self, data: dict) -> Table:
@@ -58,7 +65,4 @@ class FileDatabase(Database):
             raise InvalidStorageDataError(
                 "Файл таблицы имеет некорректную структуру."
             )
-
-        columns = tuple(data["columns"])
-        records = data.get("records", [])
-        return Table(columns, records)
+        return Table(columns=tuple(data["columns"]), records=data["records"])

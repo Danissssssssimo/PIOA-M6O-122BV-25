@@ -136,6 +136,55 @@ class TestFileDatabase(unittest.TestCase):
         with self.assertRaises(InvalidStorageDataError):
             self.db._load_table("bad_table")
 
+    def test_load_table_os_error(self):
+        """Ошибка доступа к файлу при загрузке"""
+        from src.db.backend.errors import StorageIOError
+        
+        db = FileDatabase(directory=self.temp_dir)
+        table_name = "users"
+        columns = ("id", "name")
+        db.create_table(table_name, columns)
+        
+       
+        table_path = db._get_table_path(table_name)
+        table_path.chmod(0o000)  
+        
+        with self.assertRaises(StorageIOError):
+            db._load_table(table_name)
+        
+        
+        table_path.chmod(0o644)
+
+    def test_save_table_os_error(self):
+        """Ошибка доступа при сохранении"""
+        from src.db.backend.errors import StorageIOError
+        
+        db = FileDatabase(directory=self.temp_dir)
+        table_name = "users"
+        columns = ("id", "name")
+        db.create_table(table_name, columns)
+        
+        
+        table_path = db._get_table_path(table_name)
+        table_path.chmod(0o444) 
+        
+        table = db._load_table(table_name)
+        table.insert_record({"id": 1, "name": "John"})
+        
+        with self.assertRaises(StorageIOError):
+            db._save_table(table_name, table)
+        
+        
+        table_path.chmod(0o644)
+
+    def test_init_directory_os_error(self):
+        """Ошибка создания директории"""
+        from src.db.backend.errors import StorageIOError
+        
+        # Пытаемся создать директорию в недоступном месте
+        with self.assertRaises(StorageIOError):
+            FileDatabase(directory="/root/impossible_dir")
+
 
 if __name__ == "__main__":
     unittest.main()

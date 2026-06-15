@@ -25,6 +25,10 @@ class TableAlreadyExistsError(DatabaseError):
 class TableNotFoundError(DatabaseError):
     """Ошибка, возникающая при обращении к несуществующей таблице."""
 
+class StorageIOError(Exception):
+    """Ошибка ввода-вывода при работе с файлом базы данных."""
+    pass
+
 
 class MissingColumnError(DatabaseError):
     """Ошибка, возникающая при отсутствии обязательного поля в записи."""
