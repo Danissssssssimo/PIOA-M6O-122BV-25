@@ -30,14 +30,14 @@ def _read_optional_int(prompt: str) -> int | None:
             print("Ошибка: введите целое число или оставьте поле пустым.")
 
 
-def _print_records(records: list[tuple[int, str, str, int, str]]) -> None:
+def _print_records(records: list[dict]) -> None:
     if not records:
         print("Записи не найдены")
         return
     
     print("\nРезультаты:")
     for record in records:
-        print(f"  ID: {record[0]} | Имя: {record[1]} | Фамилия: {record[2]} | Возраст: {record[3]} | Пол: {record[4]}")
+        print(f"  ID: {record['id']} | Имя: {record['first_name']} | Фамилия: {record['second_name']} | Возраст: {record['age']} | Пол: {record['sex']}")
 
 
 class TUI:
@@ -117,7 +117,7 @@ class TUI:
         sex = input("Пол (М/Ж): ").strip() or None
 
         records = self.student_table.select_records(
-            student_id=student_id,
+            id=student_id,
             first_name=first_name,
             second_name=second_name,
             age=age,
@@ -169,7 +169,7 @@ class TUI:
 
         try:
             # Сначала показываем, что удаляем
-            to_delete = self.student_table.select_records(student_id=student_id)
+            to_delete = self.student_table.select_records(id=student_id)
             if not to_delete:
                 print(f"✗ Запись с ID={student_id} не найдена")
                 return
@@ -178,7 +178,7 @@ class TUI:
             confirm = input("Подтвердите удаление (y/n): ").strip().lower()
             
             if confirm == 'y':
-                deleted = self.student_table.delete_record(student_id)
+                deleted = self.student_table.delete_record(id=student_id)
                 print(f"✓ Запись удалена: {deleted}")
                 # Сохраняем изменения
                 self.database._save_table(self.table_name, self.student_table)
