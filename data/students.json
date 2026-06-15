@@ -6,13 +6,5 @@
     "age",
     "sex"
   ],
-  "records": [
-    {
-      "id": 1,
-      "first_name": "vfvf",
-      "second_name": "vfvf",
-      "age": 32,
-      "sex": ";"
-    }
-  ]
+  "records": []
 }
