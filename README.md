@@ -6,29 +6,29 @@ Python
 
 1.Структура проекта
 
-PIOA-M6O-122BV-25/ # Корневая папка
-│
-├── src/ # Исходный код
-│ │
-│ ├── db/ # Пакет приложения
-│ │ │
-│ │ ├── init.py # Маркер пакета
-│ │ ├── main.py # Точка входа (запуск)
-│ │ ├── tui.py # Текстовый интерфейс (меню)
-│ │ │
-│ │ └── backend/ # Работа с данными
-│ │ ├── init.py
-│ │ └── memory.py # In-memory БД (CRUD)
-| | |--file.py
-| | |--errors.py
-| | |--table.py
-| | |--database.py
-│ │
-│ └── ...
-│---tests (Для тестов)
-|  |--init.py
-|  |test_memory.py
-├── README.md 
+            PIOA-M6O-122BV-25/ # Корневая папка
+            │            
+            ├── src/ # Исходный код
+            │ │
+            │ ├── db/ # Пакет приложения
+            │ │ │
+            │ │ ├── init.py # Маркер пакета
+            │ │ ├── main.py # Точка входа (запуск)
+            │ │ ├── tui.py # Текстовый интерфейс (меню)
+            │ │ │
+            │ │ └── backend/ # Работа с данными
+            │ │ ├── init.py
+            │ │ └── memory.py # In-memory БД (CRUD)
+            | | |--file.py
+            | | |--errors.py
+            | | |--table.py
+            | | |--database.py
+            │ │
+            │ └── ...
+            │---tests (Для тестов)
+            |  |--init.py
+            |  |test_memory.py
+            ├── README.md 
             
 
 2.Функциональность
