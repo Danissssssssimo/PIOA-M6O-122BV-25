@@ -1,3 +1,5 @@
+from src.db.backend.memory import MemoryDatabase
+from src.db.backend.file import FileDatabase
 
 
 def _print_menu() -> None:
@@ -42,9 +44,6 @@ def _print_records(records: list[dict]) -> None:
 
 class TUI:
     def __init__(self) -> None:
-        from src.db.backend.memory import MemoryDatabase
-        from src.db.backend.file import FileDatabase
-        
         print("\nВыберите тип базы данных:")
         print("1. In-memory (данные в оперативной памяти)")
         print("2. File database (сохранение в файл)")
@@ -58,16 +57,16 @@ class TUI:
             self.database = MemoryDatabase()
             print("Используется память (данные не сохранятся после закрытия)")
         
-        # Получаем или создаём таблицу студентов
         self.table_name = "students"
-        try:
-            self.student_table = self.database._load_table(self.table_name)
-        except:
-            # Таблицы нет — создаём новую с нужными колонками
-            from src.db.backend.table import Table
-            columns = ("id", "first_name", "second_name", "age", "sex")
-            self.student_table = Table(columns=columns)
-            self.database._save_table(self.table_name, self.student_table)
+        self._init_student_table()
+
+    def _init_student_table(self) -> None:
+        """Инициализирует таблицу студентов через публичный интерфейс Database."""
+        columns = ("id", "first_name", "second_name", "age", "sex")
+        
+        # Пытаемся получить таблицу через публичный метод
+        if not self.database._table_exists(self.table_name):
+            self.database.create_table(self.table_name, columns)
 
     def _add_student(self) -> None:
         print("\n=== Добавление записи ===")
@@ -79,13 +78,12 @@ class TUI:
         sex = input("Пол (М/Ж): ").strip()
 
         try:
-            # Проверяем, нет ли уже такого ID
-            existing = self.student_table.select_records(id=student_id)
+            # Проверяем, нет ли уже такого ID через публичный метод
+            existing = self.database.select_records(self.table_name, id=student_id)
             if existing:
-                print(f" Ошибка: Запись с id={student_id} уже существует.")
+                print(f"✗ Ошибка: Запись с id={student_id} уже существует.")
                 return
 
-            # Создаём словарь-запись
             record = {
                 "id": student_id,
                 "first_name": first_name,
@@ -93,36 +91,48 @@ class TUI:
                 "age": age,
                 "sex": sex,
             }
-                
-            self.student_table.insert_record(record)
-            self.database._save_table(self.table_name, self.student_table)
-            print(f" Запись добавлена: {record}")
+            
+            # Используем публичный метод create_record
+            self.database.create_record(self.table_name, record)
+            print(f"✓ Запись добавлена: {record}")
 
         except Exception as exc:
-            print(f" Ошибка: {exc}")
+            print(f"✗ Ошибка: {exc}")
 
     def _show_all_students(self) -> None:
         print("\n=== Все записи ===")
-        records = self.student_table.select_records()
+        # Используем публичный метод select_records
+        records = self.database.select_records(self.table_name)
         _print_records(records)
 
     def _find_students_by_filter(self) -> None:
         print("\n=== Поиск по фильтру ===")
         print("(Enter = пропустить поле)")
 
+        filters = {}
+        
         student_id = _read_optional_int("ID: ")
-        first_name = input("Имя: ").strip() or None
-        second_name = input("Фамилия: ").strip() or None
+        if student_id is not None:
+            filters["id"] = student_id
+        
+        first_name = input("Имя: ").strip()
+        if first_name:
+            filters["first_name"] = first_name
+        
+        second_name = input("Фамилия: ").strip()
+        if second_name:
+            filters["second_name"] = second_name
+        
         age = _read_optional_int("Возраст: ")
-        sex = input("Пол (М/Ж): ").strip() or None
+        if age is not None:
+            filters["age"] = age
+        
+        sex = input("Пол (М/Ж): ").strip()
+        if sex:
+            filters["sex"] = sex
 
-        records = self.student_table.select_records(
-            id=student_id,
-            first_name=first_name,
-            second_name=second_name,
-            age=age,
-            sex=sex,
-        )
+        # Используем публичный метод select_records с фильтрами
+        records = self.database.select_records(self.table_name, **filters)
         _print_records(records)
 
     def _update_student(self) -> None:
@@ -130,14 +140,15 @@ class TUI:
         
         student_id = _read_int("ID записи для обновления: ")
         
-        existing = self.student_table.select_records(id=student_id)
+        # Проверяем существование через публичный метод
+        existing = self.database.select_records(self.table_name, id=student_id)
         if not existing:
             print(f"✗ Запись с ID={student_id} не найдена")
             return
         
         print("(Enter = оставить без изменений)")
         
-        updates = {"filter_id": student_id}  
+        updates = {"filter_id": student_id}
         
         first_name = input("Новое имя: ").strip()
         if first_name:
@@ -156,8 +167,8 @@ class TUI:
             updates["sex"] = sex
 
         try:
-            updated = self.student_table.update_record(**updates)
-            self.database._save_table(self.table_name, self.student_table)
+            # Используем публичный метод update_record
+            updated = self.database.update_record(self.table_name, **updates)
             print(f"✓ Запись обновлена: {updated}")
         except Exception as exc:
             print(f"✗ Ошибка: {exc}")
@@ -168,8 +179,8 @@ class TUI:
         student_id = _read_int("ID записи для удаления: ")
 
         try:
-            # Сначала показываем, что удаляем
-            to_delete = self.student_table.select_records(id=student_id)
+            # Проверяем существование через публичный метод
+            to_delete = self.database.select_records(self.table_name, id=student_id)
             if not to_delete:
                 print(f"✗ Запись с ID={student_id} не найдена")
                 return
@@ -178,14 +189,13 @@ class TUI:
             confirm = input("Подтвердите удаление (y/n): ").strip().lower()
             
             if confirm == 'y':
-                deleted = self.student_table.delete_record(id=student_id)
+                # Используем публичный метод delete_record
+                deleted = self.database.delete_record(self.table_name, id=student_id)
                 print(f"✓ Запись удалена: {deleted}")
-                # Сохраняем изменения
-                self.database._save_table(self.table_name, self.student_table)
             else:
                 print("Удаление отменено")
 
-        except ValueError as exc:
+        except Exception as exc:
             print(f"✗ Ошибка: {exc}")
 
     def run(self) -> None:
@@ -212,7 +222,6 @@ class TUI:
                 print("Неизвестная команда. Попробуйте снова (0-5).")
 
 
-# Точка входа
 def run() -> None:
     app = TUI()
     app.run()
